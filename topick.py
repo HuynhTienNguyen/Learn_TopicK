@@ -26,8 +26,11 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import faiss
 from utils import templates, input_columns, output_columns, test_split, score_mat_2_rank_mat
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="4"
+# os.environ["CUDA_VISIBLE_DEVICES"]="4"
 
 def main(output_file, CLF, query_clf_logit, topic_knowledge, task_name, template, train_path, test_path, model_path, sentence_model_path, input_columns_name, output_columns_name, ice_num, batch_size, batch_size_inf, seed, output_json_filepath):
     # load dataset
@@ -50,7 +53,8 @@ def main(output_file, CLF, query_clf_logit, topic_knowledge, task_name, template
     inferencer = PPLInferencer(model_name=model_path, tokenizer=model_path, output_json_filepath=output_json_filepath, batch_size=batch_size_inf, accelerator=accelerator)
     topick_predictions = inferencer.inference(topick_retriever, ice_template=template, output_json_filename=output_file) #
     
-    torch.cuda.empty_cache()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
     
     return topick_predictions
 
@@ -85,6 +89,8 @@ for model_name in ['meta-llama/Llama-3.2-3B-Instruct']: # 'Qwen/Qwen2.5-0.5B-Ins
             with open(data_dir + task_name + "/query_clf_logit", 'rb') as fw: 
                 query_clf_logit = pickle.load(fw)
 
+            query_clf_logit = query_clf_logit.to(device)
+
             class Topic_predictor(nn.Module):
                 def __init__(self, topic_emb):
                     super(Topic_predictor, self).__init__()
@@ -96,8 +102,12 @@ for model_name in ['meta-llama/Llama-3.2-3B-Instruct']: # 'Qwen/Qwen2.5-0.5B-Ins
                     return output
         
             ## Load concept extractor
-            CLF = Topic_predictor(torch.FloatTensor(topic_emb)).to('cuda')
-            CLF.load_state_dict(torch.load(data_dir + task_name + "/topic_predictor", weights_only=True)) 
+            CLF = Topic_predictor(torch.FloatTensor(topic_emb)).to(device)
+            state_dict = torch.load(
+                data_dir + task_name + "/topic_predictor",
+                map_location=device
+            )
+            CLF.load_state_dict(state_dict)
 
             ## grid search
             for shot in [8]: ######################################################################################################################################################
@@ -105,6 +115,9 @@ for model_name in ['meta-llama/Llama-3.2-3B-Instruct']: # 'Qwen/Qwen2.5-0.5B-Ins
 
                 with open(data_dir + task_name + "/topic_knowledge_" + model_name.split("/")[-1], 'rb') as fw: ##############
                     topic_knowledge = pickle.load(fw)
+                    if isinstance(topic_knowledge, torch.Tensor):
+                        topic_knowledge = topic_knowledge.to(device)
+
 
 
                 topk_model = main(f'TopicK_seed{seed}_{ice_num}_shot',
