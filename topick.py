@@ -63,7 +63,7 @@ model_dir = ''
 sentence_transformer_path = 'sentence-transformers/all-mpnet-base-v2'
 data_dir = 'data/'
 
-for model_name in ['meta-llama/Llama-3.2-3B-Instruct']: # 'Qwen/Qwen2.5-0.5B-Instruct' 'meta-llama/Llama-3.2-1B-Instruct'
+for model_name in ['meta-llama/Llama-3.2-1B-Instruct']: # 'meta-llama/Llama-3.2-3B-Instruct' 'Qwen/Qwen2.5-0.5B-Instruct' 'meta-llama/Llama-3.2-1B-Instruct'
     model_path = model_dir + model_name
     sentence_model_path = sentence_transformer_path
 
