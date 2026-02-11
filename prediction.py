@@ -11,7 +11,7 @@ dir1 = 'result/'
 dataset_path = 'data/'
  
 task_names = ["cms"]
-model_names = ['meta-llama/Llama-3.2-3B-Instruct']
+model_names = ['Qwen2.5-0.5B-Instruct'] # 'Llama-3.2-3B-Instruct' 'Qwen2.5-0.5B-Instruct' 'Llama-3.2-1B-Instruct'
 seeds = [1]
 
 for task_name in task_names:
@@ -34,6 +34,11 @@ for task_name in task_names:
         data = DatasetReader(combined_dataset, input_columns=input_columns[task_name], output_column=output_columns[task_name])
     
         prediction_dir = dir1 + model_name + '/' + task_name
+     
+        print("Checking:", prediction_dir)
+        print("Exists:", os.path.exists(prediction_dir))
+        print("Is dir:", os.path.isdir(prediction_dir))
+     
         if os.path.exists(prediction_dir) and os.path.isdir(prediction_dir):
             file_checked = []
             for k in [8]:
