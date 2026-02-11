@@ -62,6 +62,9 @@ class DataCollatorWithPaddingAndCuda:
         batch.update(res_dict)
 
         if self.device:
-            batch = batch.to(self.device)
+            for k, v in batch.items():
+                if torch.is_tensor(v):
+                    batch[k] = v.to(self.device)
+
 
         return batch
