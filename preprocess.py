@@ -31,8 +31,11 @@ import faiss
 
 from utils import templates, input_columns, output_columns, test_split, score_mat_2_rank_mat, omit_substrings
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="4"
+# os.environ["CUDA_VISIBLE_DEVICES"]="4"
 
 
 #################### load dataset
@@ -65,7 +68,7 @@ torch.backends.cuda.enable_flash_sdp(False)
 
 model_id = 'sentence-transformers/all-mpnet-base-v2'  # #"sentence-transformers/multi-qa-mpnet-base-cos-v1" #
 model = SentenceTransformer(model_id)
-model = model.to("cuda")
+model = model.to(device)
 model = model.eval()
 
 from torch.utils.data import DataLoader
@@ -105,8 +108,13 @@ class Topic_predictor(nn.Module):
         output = torch.mm(self.mlp(batch_X), self.topic_emb.T)
         return output
 
-CLF = Topic_predictor(torch.FloatTensor(topic_emb)).to('cuda')
-CLF.load_state_dict(torch.load(data_dir + task_name + "/topic_predictor", weights_only=True))
+CLF = Topic_predictor(torch.FloatTensor(topic_emb)).to(device)
+state_dict = torch.load(
+    data_dir + task_name + "/topic_predictor",
+    map_location=device
+)
+CLF.load_state_dict(state_dict)
+
 
 class CLF_dataset(data.Dataset):
     def __init__(self, X, Y):
@@ -138,7 +146,7 @@ with torch.no_grad():
     c_clf_logit = []
     for _, mini_batch in enumerate(CLF_test_loader):
         batch_indices, batch_X = mini_batch
-        batch_X = batch_X.to('cuda')
+        batch_X = batch_X.to(device)
         output = CLF_test(batch_X)
         c_clf_logit.extend(output.cpu())
 
