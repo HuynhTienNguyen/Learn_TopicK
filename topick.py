@@ -51,11 +51,13 @@ def main(output_file, CLF, query_clf_logit, topic_knowledge, task_name, template
     topick_retriever = TopicKRetriever(data, CLF, query_clf_logit, topic_knowledge, task_name, ice_num=ice_num, sentence_transformers_model_name=sentence_model_path, tokenizer_name=sentence_model_path, seed=seed, batch_size=batch_size, test_split='test')
     print("Start inference....")
     inferencer = PPLInferencer(model_name=model_path, tokenizer=model_path, output_json_filepath=output_json_filepath, batch_size=batch_size_inf, accelerator=accelerator)
-    topick_predictions = inferencer.inference(topick_retriever, ice_template=template, output_json_filename=output_file) #
+    topick_predictions = inferencer.inference(topick_retriever, ice_template=template, output_json_filename=output_file) 
+    print("Output file name:", output_file)
     
     if device.type == "cuda":
         torch.cuda.empty_cache()
-    
+
+    print("Saved to:", os.path.join(output_json_filepath, output_file + ".json"))
     return topick_predictions
 
 # set the model and dataset path
@@ -78,6 +80,7 @@ for model_name in ['Qwen/Qwen2.5-0.5B-Instruct']: # 'meta-llama/Llama-3.2-3B-Ins
 
             import os
             os.makedirs(output_json_filepath, exist_ok=True)
+            print("Saving results to:", output_json_filepath)
 
             batch_size = 1024
             batch_size_inf = 4
