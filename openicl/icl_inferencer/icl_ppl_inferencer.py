@@ -189,5 +189,5 @@ class PPLInferencer(BaseInferencer):
         lens = (inputs["input_ids"] != self.tokenizer.pad_token_id).sum(-1).cpu().numpy()
         if mask_length is not None:
             lens -= np.array(mask_length)
-        ce_loss = loss.sum(-1).cpu().detach().numpy() / lens
+        ce_loss = loss.sum(-1).float().cpu().detach().numpy() / lens
         return ce_loss
